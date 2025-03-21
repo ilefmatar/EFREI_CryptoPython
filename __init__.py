@@ -28,6 +28,11 @@ def decryptage(valeur):
         return f"Valeur décryptée : {original.decode()}"  # Retourne en str
     except Exception as e:
         return f"Erreur lors du décryptage : {str(e)}"
+
+@app.route('/generate-key')
+def generate_key():
+    key = Fernet.generate_key()
+    return f"Voici votre clé personnelle : {key.decode()}"
   
                                                                                                                                                      
 if __name__ == "__main__":
