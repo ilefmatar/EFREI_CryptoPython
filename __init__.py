@@ -1,46 +1,63 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>CryptoPython</title>
-    <style>
-        /* Style général */
-        body {
-            background: linear-gradient(to right, #3498db, #8e44ad);
-            font-family: Arial, sans-serif;
-            text-align: center;
-            color: white;
-            padding: 50px;
-            margin: 0;
-        }
+from cryptography.fernet import Fernet
+from flask import Flask, render_template_string, render_template, jsonify
+from flask import render_template
+from flask import json
 
-        /* Conteneur centré avec effet carte */
-        .container {
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-            display: inline-block;
-            backdrop-filter: blur(10px);
-        }
+from urllib.request import urlopen
+import sqlite3
+                                                                                                                                       
+app = Flask(__name__)                                                                                                                  
+                                                                                                                                       
+@app.route('/')
+def hello_world():
+    return render_template('hello.html') #Comm2
 
-        /* Titre principal */
-        h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
+key = Fernet.generate_key()
+f = Fernet(key)
 
-        /* Texte sous le titre */
-        p {
-            font-size: 20px;
-            opacity: 0.9;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Bienvenue sur CryptoPython !</h1>
-        <p>Un projet passionnant pour découvrir la cryptographie et le développement web.</p>
-    </div>
-</body>
-</html>
+
+@app.route('/encrypt/<string:valeur>')
+def encryptage(valeur):
+    valeur_bytes = valeur.encode()  # Conversion str -> bytes
+    token = f.encrypt(valeur_bytes)  # Encrypt la valeur
+    return f"Valeur encryptée : {token.decode()}"  # Retourne le token en str
+
+@app.route('/decrypt/<string:valeur>')
+def decryptage(valeur):
+    valeur_bytes = valeur.encode()  # Conversion str -> bytes
+    try:
+        decrypted = f.decrypt(valeur_bytes)  # Déchiffrement
+        return f"Valeur décryptée : {decrypted.decode()}"  # Retourne en str
+    except Exception as e:
+        return f"Erreur lors du décryptage : {str(e)}"
+
+@app.route('/generate_key')
+def generate_key():
+    return f"Votre clé : {Fernet.generate_key().decode()}"
+
+
+@app.route('/encrypt_key/<key>/<text>')
+def encrypt_with_key(key, text):
+    try:
+        fernet_user = Fernet(key.encode())
+        token = fernet_user.encrypt(text.encode()).decode()
+        return f"Valeur encryptée avec votre clé : {token}"
+    except Exception as e:
+        return f"Erreur : Clé invalide ? Détail : {str(e)}"
+
+
+@app.route('/decrypt_key/<key>/<token>')
+def decrypt_with_key(key, token):
+    try:
+        fernet_user = Fernet(key.encode())
+        decrypted = fernet_user.decrypt(token.encode()).decode()
+        return f"Valeur décryptée avec votre clé : {decrypted}"
+    except Exception as e:
+        return f"Erreur lors du décryptage : {str(e)}"
+
+
+
+
+                                                                                                                                                     
+if __name__ == "__main__":
+  app.run(debug=True)
