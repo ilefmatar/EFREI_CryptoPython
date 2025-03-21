@@ -1,39 +1,48 @@
-from cryptography.fernet import Fernet
-from flask import Flask, render_template_string, render_template, jsonify
-from flask import render_template
-from flask import json
-from urllib.request import urlopen
-import sqlite3
-                                                                                                                                       
-app = Flask(__name__)                                                                                                                  
-                                                                                                                                       
+from cryptography.fernet import Fernet, InvalidToken
+from flask import Flask, render_template, jsonify
+
+app = Flask(name)
+
 @app.route('/')
 def hello_world():
-    return render_template('hello.html') #commit
+    return render_template('hello.html')
 
-key = b'QvZcs0cqjEB4ZseHQwFvREZh0QWBQcx7zqf0_0mB4J0='
+--- Routes utilisant la clé fixe (ancienne méthode) ---
+key = b'9QsgaRHRrtV2PF9hcJTwjjRZdTEqUtahTImaeudRaZw='
 f = Fernet(key)
 
 @app.route('/encrypt/<string:valeur>')
 def encryptage(valeur):
-    valeur_bytes = valeur.encode()  # Conversion str -> bytes
-    token = f.encrypt(valeur_bytes)  # Encrypt la valeur
-    return f"Valeur encryptée : {token.decode()}"  # Retourne le token en str
+    token = f.encrypt(valeur.encode())
+    return f"Valeur encryptée (clé fixe) : {token.decode()}"
 
-@app.route('/decrypt/<string:valeur>')
-def decryptage(valeur):
+@app.route('/decrypt/<string:token>')
+def decryptage(token):
     try:
-        valeur_bytes = valeur.encode()  # Conversion str -> bytes
-        original = f.decrypt(valeur_bytes)  # Décrypte la valeur
-        return f"Valeur décryptée : {original.decode()}"  # Retourne en str
+        valeur_decryptee = f.decrypt(token.encode())
+        return f"Valeur décryptée (clé fixe) : {valeur_decryptee.decode()}"
     except Exception as e:
-        return f"Erreur lors du décryptage : {str(e)}"
+        return f"Erreur lors du décryptage (clé fixe) : {str(e)}", 400
 
-@app.route('/generate-key')
-def generate_key():
-    key = Fernet.generate_key()
-    return f"Voici votre clé personnelle : {key.decode()}"
-  
-                                                                                                                                                     
-if __name__ == "__main__":
-  app.run(debug=True)
+@app.route('/encrypt_personnel/<path:cle>/<string:valeur>')
+def encryptage_personnel(cle, valeur):
+    try:
+        f_personnel = Fernet(cle.encode())
+        token = f_personnel.encrypt(valeur.encode())
+        return f"Valeur encryptée (clé personnelle) : {token.decode()}"
+    except Exception as e:
+        return f"Erreur lors de l'encryptage avec clé personnelle : {str(e)}", 400
+
+@app.route('/decrypt_personnel/<path:cle>/<string:token>')
+def decryptage_personnel(cle, token):
+    try:
+        f_personnel = Fernet(cle.encode())
+        valeur_decryptee = f_personnel.decrypt(token.encode())
+        return f"Valeur décryptée (clé personnelle) : {valeur_decryptee.decode()}"
+    except InvalidToken:
+        return "Erreur : le token n'est pas valide ou la clé est incorrecte.", 400
+    except Exception as e:
+        return f"Erreur lors du décryptage avec clé personnelle : {str(e)}", 400
+
+if name == "main":
+    app.run(debug=True)
